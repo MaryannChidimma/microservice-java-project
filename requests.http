@@ -1,0 +1,29 @@
+### Variables
+@host = http://localhost:8080
+
+### Get all users
+GET {{host}}/users
+
+### Get user by id
+GET {{host}}/users/1
+
+### Create user
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com"
+}
+
+### Update user
+PUT {{host}}/users/1
+Content-Type: application/json
+
+{
+  "name": "Jane Updated",
+  "email": "jane.updated@example.com"
+}
+
+### Delete user
+DELETE {{host}}/users/1
