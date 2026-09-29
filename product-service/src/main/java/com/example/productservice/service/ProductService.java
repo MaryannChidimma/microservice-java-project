@@ -33,7 +33,7 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    public ProductDto getProductById(Long id) {
+    public ProductDto getProductById(String id) {
         return productRepository.findById(id)
                 .map(this::toDto)
                 .orElse(null);
@@ -44,7 +44,7 @@ public class ProductService {
         return toDto(saved);
     }
 
-    public ProductDto updateProduct(Long id, ProductDto dto) {
+    public ProductDto updateProduct(String id, ProductDto dto) {
         return productRepository.findById(id)
                 .map(existing -> {
                     existing.setName(dto.getName());
@@ -56,7 +56,7 @@ public class ProductService {
                 .orElse(null);
     }
 
-    public boolean deleteProduct(Long id) {
+    public boolean deleteProduct(String id) {
         if (productRepository.existsById(id)) {
             productRepository.deleteById(id);
             return true;
