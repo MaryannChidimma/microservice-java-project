@@ -17,7 +17,7 @@ public class OrderItemModel {
 
     // Owned by product-service, so only the id is stored here
     @Column(name = "product_id", nullable = false)
-    private Long productId;
+    private String productId;
 
     // Snapshot at purchase time so order history doesn't depend on product-service
     private String productName;
@@ -26,7 +26,7 @@ public class OrderItemModel {
     private BigDecimal priceAtPurchase;
 
     public OrderItemModel() {}
-    public OrderItemModel(OrderModel order, Long productId, String productName, Integer quantity, BigDecimal priceAtPurchase) {
+    public OrderItemModel(OrderModel order, String productId, String productName, Integer quantity, BigDecimal priceAtPurchase) {
         this.order = order;
         this.productId = productId;
         this.productName = productName;
@@ -38,8 +38,8 @@ public class OrderItemModel {
     public void setId(Long id) { this.id = id; }
     public OrderModel getOrder() { return order; }
     public void setOrder(OrderModel order) { this.order = order; }
-    public Long getProductId() { return productId; }
-    public void setProductId(Long productId) { this.productId = productId; }
+    public String getProductId() { return productId; }
+    public void setProductId(String productId) { this.productId = productId; }
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
     public Integer getQuantity() { return quantity; }

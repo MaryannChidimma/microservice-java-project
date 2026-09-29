@@ -37,7 +37,7 @@ public class OrderService {
         this.userClient = userClient;
     }
 
-    private ProductDto fetchProduct(Long productId) {
+    private ProductDto fetchProduct(String productId) {
         ProductDto product;
         try {
             product = productClient.getProductById(productId);

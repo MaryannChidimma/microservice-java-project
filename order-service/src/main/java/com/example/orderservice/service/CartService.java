@@ -29,7 +29,7 @@ public class CartService {
         this.userClient = userClient;
     }
 
-    private ProductDto fetchProduct(Long productId) {
+    private ProductDto fetchProduct(String productId) {
         ProductDto product;
         try {
             product = productClient.getProductById(productId);
@@ -87,7 +87,7 @@ public class CartService {
         return toDto(getOrCreateCart(userId));
     }
 
-    public CartDto addItemToCart(Long userId, Long productId, Integer quantity) {
+    public CartDto addItemToCart(Long userId, String productId, Integer quantity) {
         CartModel cart = getOrCreateCart(userId);
         fetchProduct(productId);
 

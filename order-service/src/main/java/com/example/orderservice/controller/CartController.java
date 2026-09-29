@@ -24,7 +24,7 @@ public class CartController {
 
     @PostMapping("/{userId}/items")
     public ResponseEntity<CartDto> addItem(@PathVariable Long userId, @RequestBody Map<String, Object> body) {
-        Long productId = Long.valueOf(body.get("productId").toString());
+        String productId = body.get("productId").toString();
         Integer quantity = Integer.valueOf(body.get("quantity").toString());
         return ResponseEntity.ok(cartService.addItemToCart(userId, productId, quantity));
     }
