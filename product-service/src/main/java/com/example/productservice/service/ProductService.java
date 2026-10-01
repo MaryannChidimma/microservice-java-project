@@ -18,12 +18,18 @@ public class ProductService {
     }
 
     private ProductDto toDto(ProductModel product) {
-        return new ProductDto(product.getId(), product.getName(), product.getDescription(),
+        ProductDto dto = new ProductDto(product.getId(), product.getName(), product.getDescription(),
                 product.getPrice(), product.getStockQuantity());
+        dto.setImageUrl(product.getImageUrl());
+        dto.setCategory(product.getCategory());
+        return dto;
     }
 
     private ProductModel toEntity(ProductDto dto) {
-        return new ProductModel(dto.getName(), dto.getDescription(), dto.getPrice(), dto.getStockQuantity());
+        ProductModel product = new ProductModel(dto.getName(), dto.getDescription(), dto.getPrice(), dto.getStockQuantity());
+        product.setImageUrl(dto.getImageUrl());
+        product.setCategory(dto.getCategory());
+        return product;
     }
 
     public List<ProductDto> getAllProducts() {
@@ -51,6 +57,8 @@ public class ProductService {
                     existing.setDescription(dto.getDescription());
                     existing.setPrice(dto.getPrice());
                     existing.setStockQuantity(dto.getStockQuantity());
+                    existing.setImageUrl(dto.getImageUrl());
+                    existing.setCategory(dto.getCategory());
                     return toDto(productRepository.save(existing));
                 })
                 .orElse(null);

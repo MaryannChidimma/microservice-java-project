@@ -8,6 +8,8 @@ public class ProductDto {
     private String description;
     private BigDecimal price;
     private Integer stockQuantity;
+    private String imageUrl;
+    private String category;
 
     public ProductDto() {}
 
@@ -29,4 +31,8 @@ public class ProductDto {
     public void setPrice(BigDecimal price) { this.price = price; }
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 }
