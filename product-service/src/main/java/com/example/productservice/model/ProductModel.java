@@ -14,6 +14,9 @@ public class ProductModel {
     private String description;
     private BigDecimal price;
     private Integer stockQuantity;
+    // Optional storefront fields; older documents simply have them null
+    private String imageUrl;
+    private String category;
 
     public ProductModel() {}
 
@@ -34,4 +37,8 @@ public class ProductModel {
     public void setPrice(BigDecimal price) { this.price = price; }
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 }
