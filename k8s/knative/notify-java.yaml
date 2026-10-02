@@ -1,0 +1,33 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: notify-java
+  labels:
+    depot.platform/function: "true"
+    app.kubernetes.io/part-of: depot-serverless
+spec:
+  template:
+    metadata:
+      labels:
+        depot.platform/function: "true"
+        app.kubernetes.io/part-of: depot-serverless
+      annotations:
+        autoscaling.knative.dev/min-scale: "0"
+        autoscaling.knative.dev/max-scale: "5"
+        autoscaling.knative.dev/target: "5"
+        autoscaling.knative.dev/window: 10s
+    spec:
+      containers:
+        - image: dev.local/notify-java:v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: -XX:MaxRAMPercentage=75
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 384Mi

@@ -1,0 +1,109 @@
+# The backend's single entry point: one address that routes each path to the
+# service that owns it. Reach it from the laptop with
+#   kubectl port-forward svc/api-gateway 8000:80
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway
+data:
+  default.conf: |
+    # Each service is listed twice so nginx has a "next" server to retry a
+    # failed GET on. Both entries are the same Kubernetes Service; every new
+    # connection is load-balanced to a pod by kube-proxy, so the retry can land
+    # on a healthy one. max_fails=0: never mark the Service as down because
+    # one pod failed.
+    upstream users_retry    { server user-service:8081 max_fails=0;    server user-service:8081 max_fails=0; }
+    upstream products_retry { server product-service:8082 max_fails=0; server product-service:8082 max_fails=0; }
+    upstream orders_retry   { server order-service:8083 max_fails=0;   server order-service:8083 max_fails=0; }
+
+    # A single entry means no retry: POST/PUT/DELETE must never be sent twice.
+    upstream users_once    { server user-service:8081 max_fails=0; }
+    upstream products_once { server product-service:8082 max_fails=0; }
+    upstream orders_once   { server order-service:8083 max_fails=0; }
+
+    map $request_method $users_upstream    { default users_once;    GET users_retry;    HEAD users_retry; }
+    map $request_method $products_upstream { default products_once; GET products_retry; HEAD products_retry; }
+    map $request_method $orders_upstream   { default orders_once;   GET orders_retry;   HEAD orders_retry; }
+
+    server {
+      listen 80;
+
+      # Without this nginx sends the upstream group's name as Host, and Tomcat
+      # rejects a host name containing an underscore with 400.
+      proxy_set_header Host $host;
+      proxy_connect_timeout 2s;
+      proxy_read_timeout 10s;
+      proxy_next_upstream error timeout http_502 http_503;
+      proxy_next_upstream_tries 2;
+
+      location /users    { proxy_pass http://$users_upstream;    error_page 502 503 504 = @unavailable; }
+      location /products { proxy_pass http://$products_upstream; error_page 502 503 504 = @unavailable; }
+      location /carts    { proxy_pass http://$orders_upstream;   error_page 502 503 504 = @unavailable; }
+      location /orders   { proxy_pass http://$orders_upstream;   error_page 502 503 504 = @unavailable; }
+
+      # The gateway's own errors as JSON, same shape as the services' ProblemDetail
+      location @unavailable {
+        default_type application/problem+json;
+        return 503 '{"title":"Service Unavailable","status":503,"detail":"This part of the shop is restarting. Try again in a moment."}';
+      }
+
+      location = /healthz {
+        default_type text/plain;
+        return 200 'ok';
+      }
+
+      location / {
+        default_type application/problem+json;
+        return 404 '{"title":"Not Found","status":404,"detail":"No service owns this path."}';
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 20m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+      volumes:
+        - name: config
+          configMap:
+            name: api-gateway
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - port: 80
+      targetPort: 80

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: order-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: order-service
@@ -25,3 +25,13 @@ spec:
               value: http://user-service:8081
             - name: CLIENTS_PRODUCT_SERVICE_URL
               value: http://product-service:8082
+            - name: NOTIFICATIONS_URL
+              value: http://notify-java.default.svc.cluster.local
+            - name: JAVA_TOOL_OPTIONS
+              value: -XX:MaxRAMPercentage=75
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 384Mi

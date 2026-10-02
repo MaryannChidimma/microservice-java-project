@@ -6,13 +6,18 @@ import com.example.orderservice.dto.OrderDto;
 import com.example.orderservice.dto.OrderItemDto;
 import com.example.orderservice.dto.ProductDto;
 import com.example.orderservice.dto.UserDto;
+import com.example.orderservice.exception.BadRequestException;
+import com.example.orderservice.exception.DownstreamUnavailableException;
+import com.example.orderservice.exception.NotFoundException;
 import com.example.orderservice.model.CartItemModel;
 import com.example.orderservice.model.CartModel;
 import com.example.orderservice.model.OrderItemModel;
 import com.example.orderservice.model.OrderModel;
+import com.example.orderservice.notification.OrderPlacedEvent;
 import com.example.orderservice.repository.CartRepository;
 import com.example.orderservice.repository.OrderRepository;
 import feign.FeignException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +33,16 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final ProductClient productClient;
     private final UserClient userClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderService(OrderRepository orderRepository, CartRepository cartRepository,
-                        ProductClient productClient, UserClient userClient) {
+                        ProductClient productClient, UserClient userClient,
+                        ApplicationEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
         this.productClient = productClient;
         this.userClient = userClient;
+        this.eventPublisher = eventPublisher;
     }
 
     private ProductDto fetchProduct(String productId) {
@@ -42,12 +50,12 @@ public class OrderService {
         try {
             product = productClient.getProductById(productId);
         } catch (FeignException.NotFound e) {
-            throw new RuntimeException("Product not found: " + productId);
+            throw new NotFoundException("Product not found: " + productId);
         } catch (FeignException e) {
-            throw new RuntimeException("Product service unavailable", e);
+            throw new DownstreamUnavailableException("Product service unavailable", e);
         }
         if (product == null) {
-            throw new RuntimeException("Product not found: " + productId);
+            throw new NotFoundException("Product not found: " + productId);
         }
         return product;
     }
@@ -57,12 +65,12 @@ public class OrderService {
         try {
             user = userClient.getUserById(userId);
         } catch (FeignException.NotFound e) {
-            throw new RuntimeException("User not found: " + userId);
+            throw new NotFoundException("User not found: " + userId);
         } catch (FeignException e) {
-            throw new RuntimeException("User service unavailable", e);
+            throw new DownstreamUnavailableException("User service unavailable", e);
         }
         if (user == null) {
-            throw new RuntimeException("User not found: " + userId);
+            throw new NotFoundException("User not found: " + userId);
         }
         return user;
     }
@@ -82,10 +90,10 @@ public class OrderService {
         fetchUser(userId);
 
         CartModel cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new NotFoundException("Cart not found"));
 
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("Cannot place an order with an empty cart");
+            throw new BadRequestException("Cannot place an order with an empty cart");
         }
 
         OrderModel order = new OrderModel(userId, BigDecimal.ZERO);
@@ -106,6 +114,9 @@ public class OrderService {
 
         cart.getItems().clear();
         cartRepository.save(cart);
+
+        // Delivered to OrderNotifier only after this transaction commits
+        eventPublisher.publishEvent(new OrderPlacedEvent(saved.getId(), userId, total, saved.getOrderDate()));
 
         return toDto(saved);
     }
