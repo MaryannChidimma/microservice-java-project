@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Demo and seminar notes (kept on my machine only) ###
+DEMO_RUNBOOK.md
+docs/SEMINAR_NOTES.md
+docs/WORK_LOG.md

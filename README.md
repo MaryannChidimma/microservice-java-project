@@ -113,7 +113,27 @@ These numbers come from my laptop (Apple M1, 8 GB RAM), measured on 1 October 20
 | Orders | `POST /orders/{userId}`, `GET /orders/{id}`, `GET /orders/user/{userId}` |
 | Functions | `POST /notify` |
 
-Each service also has a page that lists its requests, at `/swagger-ui.html`.
+## API documentation (Swagger)
+
+Each service has its own Swagger page. It lists every request, shows what to send and what comes back, and lets you try a request from the browser.
+
+| Service | Swagger page | Raw description (JSON) |
+|---|---|---|
+| user-service | `http://localhost:8081/swagger-ui.html` | `http://localhost:8081/v3/api-docs` |
+| product-service | `http://localhost:8082/swagger-ui.html` | `http://localhost:8082/v3/api-docs` |
+| order-service | `http://localhost:8083/swagger-ui.html` | `http://localhost:8083/v3/api-docs` |
+
+With Docker Compose these addresses work straight away.
+
+On Minikube the Swagger pages are not behind the gateway. The gateway only lets the shop's requests through. So open a door to the service you want first, each in its own terminal:
+
+```bash
+kubectl port-forward svc/user-service 8081:8081
+kubectl port-forward svc/product-service 8082:8082
+kubectl port-forward svc/order-service 8083:8083
+```
+
+Then open the Swagger page in your browser.
 
 ## How to run it
 
@@ -199,7 +219,7 @@ I want to be honest about the limits.
 
 ## What I want to add next
 
-- My own small control panel service: scale, restart and stop services through an API, with a record of who did what.
+- A record of who did what. The admin console can already stop a copy of a service, wake a function, keep one awake and start a load test. But there is no login, and nothing writes down who did which action or when. I want to move these actions into a small control panel service of my own, add scale and restart, and keep a log of every action.
 - A message queue (RabbitMQ), so notifications are never lost.
 - Waking a function just before it is needed, instead of always or never.
 - A faster-starting Java function (GraalVM), to see how close it gets to Go.
@@ -219,8 +239,4 @@ docker-compose.yml                                the databases
 
 Built with Java 21, Spring Boot 4.1, Kubernetes 1.37 (Minikube), Knative 1.23 and nginx.
 
-## More to read
 
-- [docs/SEMINAR_NOTES.md](docs/SEMINAR_NOTES.md): the ideas explained, with likely questions and answers.
-- [docs/WORK_LOG.md](docs/WORK_LOG.md): what was built, what went wrong, and how much memory each part uses.
-- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md): step-by-step start and checks for a live demo.
