@@ -1,6 +1,7 @@
 package com.example.userservice.service;
 
 import com.example.userservice.dto.AddressDto;
+import com.example.userservice.exception.NotFoundException;
 import com.example.userservice.model.AddressModel;
 import com.example.userservice.model.UserModel;
 import com.example.userservice.repository.AddressRepository;
@@ -29,7 +30,7 @@ public class AddressService {
 
     public AddressDto saveAddress(Long userId, AddressDto dto) {
         UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found: " + userId));
 
         AddressModel address = addressRepository.findByUser_Id(userId)
                 .orElse(new AddressModel(dto.getStreet(), dto.getCity(), dto.getState(),
