@@ -6,6 +6,8 @@ import com.example.orderservice.dto.CartDto;
 import com.example.orderservice.dto.CartItemDto;
 import com.example.orderservice.dto.ProductDto;
 import com.example.orderservice.dto.UserDto;
+import com.example.orderservice.exception.DownstreamUnavailableException;
+import com.example.orderservice.exception.NotFoundException;
 import com.example.orderservice.model.CartItemModel;
 import com.example.orderservice.model.CartModel;
 import com.example.orderservice.repository.CartRepository;
@@ -34,12 +36,12 @@ public class CartService {
         try {
             product = productClient.getProductById(productId);
         } catch (FeignException.NotFound e) {
-            throw new RuntimeException("Product not found: " + productId);
+            throw new NotFoundException("Product not found: " + productId);
         } catch (FeignException e) {
-            throw new RuntimeException("Product service unavailable", e);
+            throw new DownstreamUnavailableException("Product service unavailable", e);
         }
         if (product == null) {
-            throw new RuntimeException("Product not found: " + productId);
+            throw new NotFoundException("Product not found: " + productId);
         }
         return product;
     }
@@ -49,12 +51,12 @@ public class CartService {
         try {
             user = userClient.getUserById(userId);
         } catch (FeignException.NotFound e) {
-            throw new RuntimeException("User not found: " + userId);
+            throw new NotFoundException("User not found: " + userId);
         } catch (FeignException e) {
-            throw new RuntimeException("User service unavailable", e);
+            throw new DownstreamUnavailableException("User service unavailable", e);
         }
         if (user == null) {
-            throw new RuntimeException("User not found: " + userId);
+            throw new NotFoundException("User not found: " + userId);
         }
         return user;
     }

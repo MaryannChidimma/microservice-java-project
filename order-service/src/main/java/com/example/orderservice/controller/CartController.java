@@ -1,6 +1,7 @@
 package com.example.orderservice.controller;
 
 import com.example.orderservice.dto.CartDto;
+import com.example.orderservice.exception.BadRequestException;
 import com.example.orderservice.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +25,21 @@ public class CartController {
 
     @PostMapping("/{userId}/items")
     public ResponseEntity<CartDto> addItem(@PathVariable Long userId, @RequestBody Map<String, Object> body) {
-        String productId = body.get("productId").toString();
-        Integer quantity = Integer.valueOf(body.get("quantity").toString());
-        return ResponseEntity.ok(cartService.addItemToCart(userId, productId, quantity));
+        Object productId = body.get("productId");
+        Object quantityValue = body.get("quantity");
+        if (productId == null || productId.toString().isBlank() || quantityValue == null) {
+            throw new BadRequestException("productId and quantity are required");
+        }
+        int quantity;
+        try {
+            quantity = Integer.parseInt(quantityValue.toString());
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("quantity must be a whole number");
+        }
+        if (quantity < 1) {
+            throw new BadRequestException("quantity must be at least 1");
+        }
+        return ResponseEntity.ok(cartService.addItemToCart(userId, productId.toString(), quantity));
     }
 
     @DeleteMapping("/{userId}/items/{itemId}")
