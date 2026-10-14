@@ -1,0 +1,18 @@
+# depot chart
+
+Deploys the DEPOT backend: user-service, product-service, order-service and the api-gateway.
+
+## Install / upgrade
+helm upgrade --install depot ./chart -n default -f chart/values-minikube.yaml
+
+## Environments
+| File | Where |
+|---|---|
+| values-minikube.yaml | laptop (Minikube) |
+
+## Rules for changing the chart
+- Bump `version` in Chart.yaml on every change to the chart.
+- Every new value is documented in values.yaml and the schema.
+- Run `helm lint chart` and `helm template` before opening a pull request.
+
+Built with Java 21, Spring Boot 4.1, Kubernetes 1.37 (Minikube) and nginx.

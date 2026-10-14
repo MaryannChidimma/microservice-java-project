@@ -1,0 +1,10 @@
+apiVersion: v2
+name: depot
+description: DEPOT backend - three services and the api-gateway
+type: application
+version: 0.1.0          # bump on every chart change
+appVersion: "1.0"
+kubeVersion: ">=1.30.0-0"   # refuse to install on clusters too old for this chart
+maintainers:
+  - name: techie_dimms
+    email: techie_dimms@gmail.com

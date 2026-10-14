@@ -1,0 +1,5 @@
+DEPOT {{ .Chart.AppVersion }} installed as "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Check:     kubectl get pods -n {{ .Release.Namespace }}
+History:   helm history {{ .Release.Name }} -n {{ .Release.Namespace }}
+Roll back: helm rollback {{ .Release.Name }} -n {{ .Release.Namespace }}

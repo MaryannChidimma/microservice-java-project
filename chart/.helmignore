@@ -1,0 +1,16 @@
+# Files that `helm package` leaves out of the chart archive.
+# Same pattern syntax as .gitignore: one pattern per line, # starts a comment.
+
+# Version control
+.git/
+.gitignore
+
+# Operating system and editor files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
