@@ -7,16 +7,12 @@ metadata:
   name: api-gateway
 data:
   default.conf: |
-    # Each service is listed twice so nginx has a "next" server to retry a
-    # failed GET on. Both entries are the same Kubernetes Service; every new
-    # connection is load-balanced to a pod by kube-proxy, so the retry can land
-    # on a healthy one. max_fails=0: never mark the Service as down because
-    # one pod failed.
+ 
     upstream users_retry    { server user-service:8081 max_fails=0;    server user-service:8081 max_fails=0; }
     upstream products_retry { server product-service:8082 max_fails=0; server product-service:8082 max_fails=0; }
     upstream orders_retry   { server order-service:8083 max_fails=0;   server order-service:8083 max_fails=0; }
 
-    # A single entry means no retry: POST/PUT/DELETE must never be sent twice.
+    # A single entry means no retry: POST/PUT/DELETE must never be sent twice so a write like "create user" is never sent twice.
     upstream users_once    { server user-service:8081 max_fails=0; }
     upstream products_once { server product-service:8082 max_fails=0; }
     upstream orders_once   { server order-service:8083 max_fails=0; }

@@ -1,8 +1,5 @@
-# Autoscaling for product-service: add a pod when average CPU passes 80% of
-# the 100m each pod requests, between 2 and 3 pods. An idle pod sits at
-# 20-50%, so a much lower target would never scale back down.
-#
-# Watch it:  kubectl get hpa product-service --watch
+# HPA for product-service: scales 2 -> 3 replicas on CPU.
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -14,9 +11,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: product-service
-  # 2 is what the Deployment already runs (the Pod Recovery demo needs two)
   minReplicas: 2
-  # One extra pod is all the 4 GB Minikube has room to start under load
   maxReplicas: 3
   metrics:
     - type: Resource
@@ -28,6 +23,5 @@ spec:
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 0
-    # Default is 5 minutes; one minute keeps the demo watchable
     scaleDown:
       stabilizationWindowSeconds: 60
