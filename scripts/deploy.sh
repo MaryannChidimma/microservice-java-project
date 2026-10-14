@@ -15,8 +15,6 @@ cd "$(dirname "$0")/.."
 
 SERVICES=(user-service product-service order-service)
 TAG=1.0
-FUNCTIONS=(notify-java notify-go)
-FUNCTION_TAG=v1
 
 if ! minikube status >/dev/null 2>&1; then
   echo "Minikube is not running. Start it first:"
@@ -56,20 +54,6 @@ done
 # The gateway reads its nginx config from a ConfigMap only when it starts
 kubectl rollout restart deployment/api-gateway
 kubectl rollout status deployment/api-gateway --timeout=120s
-
-# Serverless functions, only once Knative is installed (scripts/install-knative.sh)
-if kubectl get crd services.serving.knative.dev >/dev/null 2>&1; then
-  for f in "${FUNCTIONS[@]}"; do
-    echo "==> Building and loading dev.local/$f:$FUNCTION_TAG"
-    docker build -t "dev.local/$f:$FUNCTION_TAG" "./$f"
-    minikube image load "dev.local/$f:$FUNCTION_TAG"
-  done
-  kubectl apply -f k8s/knative/
-  kubectl wait --for=condition=Ready ksvc --all --timeout=180s
-  kubectl get ksvc
-else
-  echo "==> Knative not installed; skipping functions (run scripts/install-knative.sh)"
-fi
 
 echo
 kubectl get pods -o wide

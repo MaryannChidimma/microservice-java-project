@@ -14,8 +14,8 @@ import org.springframework.web.client.RestClient;
 import java.time.Duration;
 import java.util.Map;
 
-// Calls the serverless notify function after an order is committed.
-// Fire-and-forget: a cold start or a failure never slows or fails checkout.
+// Calls the notification endpoint after an order is committed.
+// Fire-and-forget: a slow or failed call never slows or fails checkout.
 @Component
 public class OrderNotifier {
 
@@ -28,7 +28,7 @@ public class OrderNotifier {
         this.notifyUrl = notifyUrl;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
-        // Generous: the function may be starting from zero
+        // Generous: the receiver may be slow to start
         factory.setReadTimeout(Duration.ofSeconds(30));
         this.restClient = RestClient.builder().requestFactory(factory).build();
     }

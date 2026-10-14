@@ -14,9 +14,7 @@ There are two other projects that use this backend:
 - **Sell things.** Users, products, carts and orders all work.
 - **Fix itself.** If a copy of a service dies, Kubernetes starts a new one, and shoppers do not notice.
 - **Grow when busy.** product-service gets one more copy when it is under load, and loses it again when things are quiet.
-- **Sleep when idle.** Two small functions run zero copies until someone calls them. This saves resources, but the first call is slow. I measured how slow.
 - **Give clear errors.** A wrong request gets a short, readable message instead of a crash.
-- **Not keep the customer waiting.** After an order, a notification is sent in the background. The customer gets their answer first.
 
 ## The parts
 
@@ -26,8 +24,6 @@ There are two other projects that use this backend:
 | `product-service` | The product list, prices and stock | MongoDB |
 | `order-service` | Carts and orders | PostgreSQL |
 | `api-gateway` | The one front door to the three services | none |
-| `notify-java` | A small function that receives "order placed" messages (Java) | none |
-| `notify-go` | The same function, written in Go | none |
 
 ```mermaid
 flowchart LR
@@ -40,7 +36,6 @@ flowchart LR
     user --> userdb[(users database)]
     product --> productdb[(products database)]
     order --> orderdb[(orders database)]
-    order -. after an order .-> njava[notify-java]
     admin[Admin console] -. watches and controls .-> cluster[Kubernetes]
 ```
 
@@ -72,10 +67,6 @@ I tested this by sending a request every 0.2 seconds while deleting a copy. Out 
 
 **Growing when busy.** A rule watches how hard product-service is working. Above 80% CPU it adds a third copy. After a quiet minute it goes back to 2.
 
-**Sleeping functions and the "cold start".** `notify-java` and `notify-go` run zero copies when nobody calls them. The first call has to wait for a copy to start. That wait is called a cold start. See the numbers below.
-
-**The customer does not wait for the notification.** order-service saves the order, answers the customer, and only then calls `notify-java`. In my test the order came back in about 1 second, and the notification arrived about 6 seconds later. If the function is down, the order still succeeds.
-
 **Clear errors.** Every error is a small piece of JSON with a status and a message:
 
 | Status | Meaning | Example |
@@ -83,25 +74,6 @@ I tested this by sending a request every 0.2 seconds while deleting a copy. Out 
 | 404 | Not found | The product or user does not exist |
 | 400 | The request is wrong | No quantity was given, or the cart is empty |
 | 503 | Something it depends on is down | order-service cannot reach product-service |
-
-## What I measured: cold starts
-
-The same function in two languages, on the same machine. Each number is the middle value of several runs.
-
-| Function | First call after sleeping | Calls after that | With one copy kept awake | Size |
-|---|---|---|---|---|
-| Java (`notify-java`) | 3248 ms | 9 ms | 8 ms | 228 MB |
-| Go (`notify-go`) | 1013 ms | 6 ms | 6 ms | 7.3 MB |
-
-What this shows:
-
-- Java takes about 3 times longer than Go to wake up.
-- Once awake, they are equally fast.
-- Keeping one copy always awake removes the wait, but that copy uses resources even when nobody calls it.
-
-That is the trade-off: save resources and make the first user wait, or pay for an idle copy and make nobody wait.
-
-These numbers come from my laptop (Apple M1, 8 GB RAM), measured on 1 October 2026. They are good for comparing Java with Go. They are not what you would get in a real data centre. The raw data is in `docs/results/`.
 
 ## Requests you can make
 
@@ -111,7 +83,6 @@ These numbers come from my laptop (Apple M1, 8 GB RAM), measured on 1 October 20
 | Products | `GET/POST /products`, `GET/PUT/DELETE /products/{id}` |
 | Carts | `GET /carts/{userId}`, `POST /carts/{userId}/items`, `DELETE /carts/{userId}/items/{itemId}` |
 | Orders | `POST /orders/{userId}`, `GET /orders/{id}`, `GET /orders/user/{userId}` |
-| Functions | `POST /notify` |
 
 ## API documentation (Swagger)
 
@@ -152,7 +123,6 @@ curl localhost:8082/products
 
 ```bash
 minikube start --cpus=4 --memory=3600
-./scripts/install-knative.sh     # only once for a new cluster
 ./scripts/deploy.sh              # builds and starts everything
 ```
 
@@ -189,22 +159,6 @@ kubectl delete pod <one of the two names>
 kubectl get pods -l app=product-service -w
 ```
 
-**Wake a sleeping function.** Open the door to the functions, then call one. The first call takes a second or more, the second call is instant:
-
-```bash
-kubectl port-forward -n kourier-system svc/kourier 8091:80
-```
-
-```bash
-curl -s -o /dev/null -w '%{time_total}s\n' -X POST -H "Host: notify-go.default.127.0.0.1.sslip.io" -d 'hello' http://127.0.0.1:8091/notify
-```
-
-**Run all the cold-start measurements.** This takes about 10 minutes:
-
-```bash
-./scripts/coldstart.sh
-```
-
 ## What is not done yet
 
 I want to be honest about the limits.
@@ -213,30 +167,26 @@ I want to be honest about the limits.
 - The databases run outside Kubernetes and have no backup copy.
 - Only product-service has health checks and a second copy. The other two services have one copy each.
 - There is no login. Anyone who can reach it can use it.
-- The notification is sent once. If it fails, it is not tried again.
+- Notifications are switched off. order-service can send one after each order, but nothing receives it yet, so `notifications.url` is left empty.
 - Stock is stored but not checked when you order.
 - There are almost no automated tests.
 
 ## What I want to add next
 
-- A record of who did what. The admin console can already stop a copy of a service, wake a function, keep one awake and start a load test. But there is no login, and nothing writes down who did which action or when. I want to move these actions into a small control panel service of my own, add scale and restart, and keep a log of every action.
-- A message queue (RabbitMQ), so notifications are never lost.
-- Waking a function just before it is needed, instead of always or never.
-- A faster-starting Java function (GraalVM), to see how close it gets to Go.
+- A record of who did what. The admin console can already stop a copy of a service and start a load test. But there is no login, and nothing writes down who did which action or when. I want to move these actions into a small control panel service of my own, add scale and restart, and keep a log of every action.
+- Notifications after an order, with something that receives them and a way to try again when it fails.
 - Login and proper security.
 
 ## Where things are
 
 ```
 user-service/  product-service/  order-service/   the three services
-notify-java/   notify-go/                         the two functions
 k8s/                                              Kubernetes files for the services and the gateway
-k8s/knative/                                      Kubernetes files for the functions
-scripts/                                          deploy, install Knative, measure cold starts
-docs/                                             notes, work log and results
+scripts/                                          deploy
+docs/                                             notes and work log
 docker-compose.yml                                the databases
 ```
 
-Built with Java 21, Spring Boot 4.1, Kubernetes 1.37 (Minikube), Knative 1.23 and nginx.
+Built with Java 21, Spring Boot 4.1, Kubernetes 1.37 (Minikube) and nginx.
 
 
